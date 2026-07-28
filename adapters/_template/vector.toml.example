@@ -1,0 +1,40 @@
+# Template Vector config for a new AIRKit adapter.
+# See adapters/crowdstrike/vector.toml or adapters/splunk-hec/vector.toml
+# for worked examples of push vs. pull sources.
+
+[sources.your_source]
+# type = "http_push" | "kafka" | "file" | "syslog" | etc. — match manifest.yaml's input.protocol
+# ... source-specific config ...
+
+# One [transforms.*] + [transforms.*.remap] pair per canonical event class
+# this adapter emits. Every remap MUST set at minimum:
+#   .event_class   (one of alert | incident | process_event | network_event |
+#                   auth_event | file_event | raw_telemetry)
+#   .uid           (prefixed with this adapter's name, e.g. "your-source-name:<native-id>")
+#   .time          (RFC3339 / ISO8601)
+#   .source.adapter (must equal manifest.yaml's adapter_name)
+#   .raw           (the original unmodified payload, for forensic fidelity)
+#
+# See schema/ocsf/<event_class>.schema.json for the full required/optional
+# field list for whichever event class you're targeting.
+
+[transforms.your_source_to_canonical]
+type = "remap"
+inputs = ["your_source"]
+source = '''
+.event_class = "raw_telemetry"
+.uid = "your-source-name:" + uuid_v4()
+.time = to_string(now())
+.source.adapter = "your-source-name"
+.raw = .
+'''
+
+# Sink to the matching ClickHouse table for the event class(es) above, plus
+# always sink to airkit.raw_events for the universal fallback query path.
+
+[sinks.clickhouse_target_table]
+type = "clickhouse"
+inputs = ["your_source_to_canonical"]
+endpoint = "${AIRKIT_CLICKHOUSE_ENDPOINT}"
+table = "airkit.raw_events"   # change to the typed table matching your event_class
+database = "airkit"
