@@ -1,0 +1,31 @@
+adapter_name: splunk-hec
+vendor: Splunk Enterprise
+description: >
+  Accepts push telemetry over Splunk's HTTP Event Collector (HEC) protocol.
+  Splunk (or a Splunk forwarder) sends events directly to this collector's
+  HEC-compatible endpoint; no outbound connection to Splunk is made from
+  inside the zero-egress boundary.
+
+input:
+  protocol: http_push
+  port: 8088
+  auth: hec_token
+
+output_event_classes:
+  - alert
+  - raw_telemetry
+
+collector:
+  engine: vector
+  config_path: vector.toml
+
+field_mapping_notes: >
+  Splunk notable events (from Enterprise Security) map to canonical alerts;
+  urgency field (low/medium/high/critical, occasionally "informational")
+  maps directly onto the canonical severity enum with no lossy collapsing
+  needed, since Splunk's scale already matches. Anything arriving via HEC
+  that isn't a recognized notable-event shape (i.e. generic indexed data
+  forwarded ad hoc) is passed through as raw_telemetry rather than dropped,
+  since HEC is often used for arbitrary log forwarding beyond ES notables.
+
+maintainer: airkit-core
