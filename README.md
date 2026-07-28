@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/license-proprietary-lightgrey)](#license)
 
 <p align="center">
-  <img src="/assets/air-kit_logo.png" alt="AIRKit" width="240">
+  <img src="/assets/AIR-Kit_logo.png" alt="AIRKit" width="240">
 </p>
 
 # AIRKit
