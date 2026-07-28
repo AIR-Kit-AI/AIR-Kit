@@ -1,0 +1,40 @@
+# Template for a new AIRKit adapter.
+#
+# 1. Copy this directory to adapters/<your-source-name>/ (lowercase, hyphens only).
+# 2. Rename this file to manifest.yaml and vector.toml.example to vector.toml.
+# 3. Fill in every field below. field_mapping_notes is not optional in
+#    practice even though the JSON schema can't enforce that — an
+#    undocumented lossy mapping is exactly the kind of bug that surfaces
+#    mid-incident rather than at authoring time.
+# 4. Validate against adapters/contract/adapter.schema.json before submitting.
+# 5. Run `install/lib/validate_adapter.sh <your-source-name>` (see docs/adapter-authoring-guide.md).
+
+adapter_name: your-source-name          # must match this directory's name
+vendor: Full Vendor / Product Name
+description: >
+  One or two sentences: what this source is, how telemetry physically
+  arrives (push/pull/tail), and whether anything outside the zero-egress
+  boundary is required to get data in (e.g. a forwarder in the corporate
+  network that AIRKit itself doesn't run).
+
+input:
+  protocol: http_push   # one of: syslog | http_push | s3_pull | file_tail | kafka
+  port: 0                # if applicable
+  auth: none              # one of: none | hec_token | basic | mtls | iam_role
+
+output_event_classes:
+  - raw_telemetry        # list every canonical event class this adapter can emit;
+                          # see schema/ocsf/ for the full set and field definitions
+
+collector:
+  engine: vector          # vector (default) or fluentbit
+  config_path: vector.toml
+
+field_mapping_notes: >
+  Document every non-obvious mapping decision here: how vendor severity
+  scales collapse onto the canonical severity enum, which vendor fields
+  have no canonical home and are preserved only in raw, and any fields
+  you chose to drop entirely (and why that's safe to drop rather than
+  just inconvenient to map).
+
+maintainer: your-team-or-name
