@@ -1,0 +1,36 @@
+# AIRKit top-level configuration.
+# Copy to airkit.config.yaml (this file) and edit before running
+# install/install.sh. This is the one file most deployments need to touch.
+
+aws:
+  region: us-east-1
+  internal_corporate_cidr: "10.0.0.0/8"     # who's allowed to reach the SGLang API / analyst console
+  weights_s3_bucket: "REPLACE-ME-pre-staged-glm52-weights-bucket"
+  instance_type: "p5e.48xlarge"
+
+# Which adapters (from adapters/) to install and wire into the ingestion
+# pipeline. Each name must correspond to a directory under adapters/ with
+# a valid manifest.yaml — see adapters/_template/ to author a new one.
+# generic-syslog is enabled by default as the fallback so nothing is
+# silently dropped for sources without a dedicated adapter yet.
+enabled_adapters:
+  - generic-syslog
+  # - crowdstrike
+  # - splunk-hec
+  # - zeek
+
+# Per-adapter runtime configuration. Keys here correspond to the
+# ${AIRKIT_...} environment variables referenced in each adapter's
+# vector.toml. Only fill in the ones for adapters you've enabled above.
+adapter_config:
+  crowdstrike:
+    kafka_brokers: "REPLACE-ME:9092"
+  splunk_hec:
+    hec_token: "REPLACE-ME"
+  # zeek and generic-syslog need no adapter-specific config beyond
+  # AIRKIT_CLICKHOUSE_ENDPOINT, which is supplied automatically by the
+  # installer from the tofu output rather than listed here.
+
+agent:
+  model_name: "GLM-5.2"
+  embedding_model: "bge-large-en-v1.5"
