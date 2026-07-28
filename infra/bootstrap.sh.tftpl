@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# AIRKit inference node bootstrap.
+# Runs once as EC2 user_data. Mounts the model weights volume, hydrates
+# GLM-5.2 from an internal S3 bucket (reached via VPC Gateway Endpoint,
+# never the public internet), and starts SGLang.
+set -eo pipefail
+
+LOG_FILE=/var/log/airkit-bootstrap.log
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+echo "[airkit] bootstrap starting: $(date -u)"
+
+# 1. Wait for and mount the attached EBS volume holding model weights.
+DEVICE="/dev/nvme1n1"
+MOUNT_POINT="/mnt/models"
+
+echo "[airkit] waiting for $DEVICE to attach..."
+for i in $(seq 1 30); do
+  if [ -e "$DEVICE" ]; then
+    break
+  fi
+  sleep 5
+done
+
+if [ ! -e "$DEVICE" ]; then
+  echo "[airkit] FATAL: $DEVICE never appeared. Aborting." >&2
+  exit 1
+fi
+
+mkdir -p "$MOUNT_POINT"
+if ! blkid "$DEVICE" > /dev/null 2>&1; then
+  echo "[airkit] formatting $DEVICE as ext4 (first boot)"
+  mkfs.ext4 "$DEVICE"
+fi
+mount "$DEVICE" "$MOUNT_POINT"
+grep -q "$DEVICE" /etc/fstab || echo "$DEVICE $MOUNT_POINT ext4 defaults,nofail 0 2" >> /etc/fstab
+
+# 2. Hydrate GLM-5.2 weights from the internal S3 bucket if not already present.
+MODEL_DIR="$MOUNT_POINT/GLM-5.2"
+if [ ! -d "$MODEL_DIR" ] || [ -z "$(ls -A "$MODEL_DIR" 2>/dev/null)" ]; then
+  echo "[airkit] hydrating GLM-5.2 weights from s3://${weights_s3_bucket}/GLM-5.2"
+  mkdir -p "$MODEL_DIR"
+  aws s3 sync "s3://${weights_s3_bucket}/GLM-5.2" "$MODEL_DIR"
+else
+  echo "[airkit] model weights already present at $MODEL_DIR, skipping hydration"
+fi
+
+# 3. Launch SGLang serving GLM-5.2 with 8-way tensor parallelism across
+#    the node's GPUs. Container runs with --net=host so it binds directly
+#    to the instance's private IP inside the zero-egress subnet.
+echo "[airkit] starting SGLang container on port ${sglang_port}"
+docker run -d \
+  --gpus all \
+  --ipc=host \
+  --net=host \
+  --restart unless-stopped \
+  -v "$MOUNT_POINT":/models \
+  --name airkit-sglang \
+  lmsysorg/sglang:latest \
+  python3 -m sglang.launch_server \
+    --model-path /models/GLM-5.2 \
+    --tp 8 \
+    --trust-remote-code \
+    --port "${sglang_port}" \
+    --host 0.0.0.0 \
+    --mem-fraction-static 0.90 \
+    --context-length 1048576 \
+    --log-level-http info
+
+echo "[airkit] bootstrap complete: $(date -u)"
