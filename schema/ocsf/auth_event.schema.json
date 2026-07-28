@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://airkit.local/schema/ocsf/auth_event.schema.json",
+  "title": "AuthEvent",
+  "description": "An authentication or authorization event: login, logout, privilege escalation, token issuance.",
+  "type": "object",
+  "required": ["event_class", "time", "uid", "action", "outcome", "actor"],
+  "properties": {
+    "event_class": { "const": "auth_event" },
+    "uid": { "type": "string" },
+    "time": { "type": "string", "format": "date-time" },
+    "action": {
+      "type": "string",
+      "enum": ["login", "logout", "privilege_escalation", "token_issued", "token_revoked", "mfa_challenge"],
+      "description": "Normalized auth action. Adapters map IdP-specific event types (e.g. Okta 'user.session.start') onto this set."
+    },
+    "outcome": {
+      "type": "string",
+      "enum": ["success", "failure", "denied"]
+    },
+    "actor": {
+      "type": "object",
+      "required": ["username"],
+      "properties": {
+        "username": { "type": "string" },
+        "user_id": { "type": "string" },
+        "source_ip": { "type": "string" }
+      }
+    },
+    "target_resource": {
+      "type": "string",
+      "description": "What was authenticated against or escalated into, e.g. a role ARN, an application name."
+    },
+    "mfa_used": { "type": "boolean" },
+    "source": {
+      "type": "object",
+      "required": ["adapter", "vendor"],
+      "properties": {
+        "adapter": { "type": "string" },
+        "vendor": { "type": "string" },
+        "native_id": { "type": "string" }
+      }
+    },
+    "raw": { "type": "object" }
+  }
+}
