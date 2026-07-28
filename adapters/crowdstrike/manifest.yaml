@@ -1,0 +1,35 @@
+adapter_name: crowdstrike
+vendor: CrowdStrike Falcon
+description: >
+  Ingests CrowdStrike Falcon detections and process telemetry via the
+  Falcon Event Streams API (falconhoseapi). Pull-based over HTTPS to the
+  Falcon cloud, landing on an internal Kafka-compatible topic that Vector
+  tails — the SOC node itself makes no outbound connection to CrowdStrike;
+  a separate small forwarder inside the corporate network (outside AIRKit's
+  zero-egress boundary) performs that pull and republishes internally.
+
+input:
+  protocol: kafka
+  auth: iam_role
+
+output_event_classes:
+  - alert
+  - process_event
+  - network_event
+
+collector:
+  engine: vector
+  config_path: vector.toml
+
+field_mapping_notes: >
+  Falcon severity is 1-5 (Informational=1 ... Critical=5); mapped directly
+  onto the canonical enum in order. Falcon's ProcessRollup2 events map to
+  action="create" in process_event; EndOfProcess maps to action="terminate".
+  Falcon's own detection ID (e.g. "ldt:...") is preserved as source.native_id
+  and prefixed as "crowdstrike:<id>" for the canonical uid field. Falcon
+  provides a proprietary "PatternDisposition" bitmask with no clean
+  canonical home — preserved only in the raw blob, not surfaced as a typed
+  field, since decoding it requires vendor-specific bit-flag knowledge the
+  canonical schema shouldn't need to know about.
+
+maintainer: airkit-core
