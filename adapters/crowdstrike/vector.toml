@@ -1,0 +1,90 @@
+# AIRKit adapter: CrowdStrike Falcon
+# Source: internal Kafka topic fed by a Falcon Event Streams forwarder
+# running outside AIRKit's zero-egress boundary (see manifest.yaml).
+# Sink: airkit.alerts / airkit.process_events / airkit.network_events
+# in ClickHouse, per event type, plus airkit.raw_events always.
+
+[sources.crowdstrike_kafka]
+type = "kafka"
+bootstrap_servers = "${AIRKIT_INTERNAL_KAFKA_BROKERS}"
+group_id = "airkit-crowdstrike-adapter"
+topics = ["falcon-event-streams"]
+decoding.codec = "json"
+
+# --- Detections -> canonical alert schema ---
+[transforms.crowdstrike_to_alert]
+type = "filter"
+inputs = ["crowdstrike_kafka"]
+condition = '.metadata.eventType == "DetectionSummaryEvent"'
+
+[transforms.crowdstrike_to_alert.remap]
+type = "remap"
+inputs = ["crowdstrike_to_alert"]
+source = '''
+.event_class = "alert"
+.uid = "crowdstrike:" + .event.DetectId
+.time = .event.ProcessStartTime
+.severity = if .event.Severity >= 5 { "critical" }
+            else if .event.Severity == 4 { "high" }
+            else if .event.Severity == 3 { "medium" }
+            else if .event.Severity == 2 { "low" }
+            else { "informational" }
+.message = .event.DetectDescription
+.category = .event.Tactic
+.mitre_attack_techniques = .event.Technique
+.source.adapter = "crowdstrike"
+.source.vendor = "CrowdStrike Falcon"
+.source.native_id = .event.DetectId
+.host.hostname = .event.ComputerName
+.host.ip = .event.LocalIP
+.raw = .event
+'''
+
+# --- ProcessRollup2 / EndOfProcess -> canonical process_event schema ---
+[transforms.crowdstrike_to_process_event]
+type = "filter"
+inputs = ["crowdstrike_kafka"]
+condition = '.metadata.eventType == "ProcessRollup2" || .metadata.eventType == "EndOfProcess"'
+
+[transforms.crowdstrike_to_process_event.remap]
+type = "remap"
+inputs = ["crowdstrike_to_process_event"]
+source = '''
+.event_class = "process_event"
+.uid = "crowdstrike:" + .event.ProcessId
+.time = .event.Timestamp
+.action = if .metadata.eventType == "ProcessRollup2" { "create" } else { "terminate" }
+.process.pid = .event.ProcessId
+.process.name = .event.ImageFileName
+.process.command_line = .event.CommandLine
+.process.hash_sha256 = .event.SHA256HashData
+.process.user = .event.UserName
+.parent_process.pid = .event.ParentProcessId
+.parent_process.name = .event.ParentImageFileName
+.host.hostname = .event.ComputerName
+.source.adapter = "crowdstrike"
+.source.vendor = "CrowdStrike Falcon"
+.source.native_id = string!(.event.ProcessId)
+.raw = .event
+'''
+
+[sinks.clickhouse_alerts]
+type = "clickhouse"
+inputs = ["crowdstrike_to_alert"]
+endpoint = "${AIRKIT_CLICKHOUSE_ENDPOINT}"
+table = "airkit.alerts"
+database = "airkit"
+
+[sinks.clickhouse_process_events]
+type = "clickhouse"
+inputs = ["crowdstrike_to_process_event"]
+endpoint = "${AIRKIT_CLICKHOUSE_ENDPOINT}"
+table = "airkit.process_events"
+database = "airkit"
+
+[sinks.clickhouse_raw_events]
+type = "clickhouse"
+inputs = ["crowdstrike_to_alert", "crowdstrike_to_process_event"]
+endpoint = "${AIRKIT_CLICKHOUSE_ENDPOINT}"
+table = "airkit.raw_events"
+database = "airkit"
