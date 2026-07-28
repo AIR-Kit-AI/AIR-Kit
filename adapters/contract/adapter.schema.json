@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://airkit.local/adapters/contract/adapter.schema.json",
+  "title": "AdapterManifest",
+  "description": "Every adapter directory under adapters/<name>/ must contain a manifest.yaml validating against this schema, alongside its vector.toml (or equivalent collector config). The installer reads manifest.yaml to know how to wire the adapter into the ingestion pipeline without needing adapter-specific installer code — this is the mechanism that keeps adding a new data source a config change, not a product change.",
+  "type": "object",
+  "required": ["adapter_name", "vendor", "input", "output_event_classes", "collector"],
+  "properties": {
+    "adapter_name": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Must match the directory name under adapters/. Used as the 'adapter' field stamped onto every canonical event this adapter produces."
+    },
+    "vendor": {
+      "type": "string",
+      "description": "Human-readable vendor/product name, e.g. 'CrowdStrike Falcon', 'Splunk Enterprise'."
+    },
+    "description": {
+      "type": "string"
+    },
+    "input": {
+      "type": "object",
+      "required": ["protocol"],
+      "properties": {
+        "protocol": {
+          "type": "string",
+          "enum": ["syslog", "http_push", "s3_pull", "file_tail", "kafka"],
+          "description": "How telemetry arrives at the collector. Determines which Vector/FluentBit source block the adapter's collector config uses."
+        },
+        "port": {
+          "type": "integer",
+          "description": "Listening port, if input.protocol requires one (syslog, http_push)."
+        },
+        "auth": {
+          "type": "string",
+          "enum": ["none", "hec_token", "basic", "mtls", "iam_role"],
+          "description": "Authentication the collector must validate before accepting data from this source."
+        }
+      }
+    },
+    "output_event_classes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "enum": ["alert", "incident", "process_event", "network_event", "auth_event", "file_event", "raw_telemetry"]
+      },
+      "description": "Which canonical event classes (see schema/ocsf/) this adapter is capable of emitting. Used by the installer to sanity-check that ClickHouse tables/Qdrant collections needed by an enabled adapter actually exist before ingestion starts."
+    },
+    "collector": {
+      "type": "object",
+      "required": ["engine", "config_path"],
+      "properties": {
+        "engine": {
+          "type": "string",
+          "enum": ["vector", "fluentbit"],
+          "description": "Which log collector engine parses this source. Vector is the default; FluentBit is supported for sources where its plugin ecosystem is meaningfully better (Kubernetes-native sources, primarily)."
+        },
+        "config_path": {
+          "type": "string",
+          "description": "Path, relative to the adapter directory, to the collector config file (e.g. 'vector.toml')."
+        }
+      }
+    },
+    "field_mapping_notes": {
+      "type": "string",
+      "description": "Free-text documentation of any lossy or ambiguous field mappings from vendor-native format to canonical schema — e.g. how a 5-point vendor severity scale was collapsed onto the canonical 5-value enum, or which vendor fields have no canonical home and are preserved only in the raw blob. This is required in practice (even though not JSON-Schema-enforceable) because silent lossy mappings are exactly the kind of bug that surfaces mid-incident, not at adapter-authoring time."
+    },
+    "maintainer": {
+      "type": "string",
+      "description": "Who owns this adapter — 'airkit-core' for adapters shipped with the product, or a customer/team identifier for adapters authored locally."
+    }
+  }
+}
