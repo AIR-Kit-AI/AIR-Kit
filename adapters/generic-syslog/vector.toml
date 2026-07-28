@@ -1,0 +1,28 @@
+# AIRKit adapter: generic syslog fallback
+# Source: any device speaking RFC 3164/5424 syslog over UDP/TCP 514.
+# Sink: airkit.raw_events only — this adapter never produces typed events.
+
+[sources.generic_syslog]
+type = "syslog"
+address = "0.0.0.0:514"
+mode = "udp"
+
+[transforms.syslog_to_raw_telemetry]
+type = "remap"
+inputs = ["generic_syslog"]
+source = '''
+.event_class = "raw_telemetry"
+.uid = "generic-syslog:" + uuid_v4()
+.time = to_string(.timestamp)
+.message = .message
+.host.hostname = .hostname
+.source.adapter = "generic-syslog"
+.raw = .
+'''
+
+[sinks.clickhouse_raw_events]
+type = "clickhouse"
+inputs = ["syslog_to_raw_telemetry"]
+endpoint = "${AIRKIT_CLICKHOUSE_ENDPOINT}"
+table = "airkit.raw_events"
+database = "airkit"
