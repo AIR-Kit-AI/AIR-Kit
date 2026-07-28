@@ -1,0 +1,34 @@
+{
+  "name": "qdrant_tool",
+  "description": "Hybrid semantic + BM25 search against airkit Qdrant collections (playbooks, detection_rules, incident_history). Read-only — this tool never writes to Qdrant; ingestion of new playbooks/rules/history happens through a separate offline indexing process, not through the agent.",
+  "tools": [
+    {
+      "name": "search_vector_playbooks",
+      "description": "Hybrid search a Qdrant collection and return the top matching chunks with their payload.",
+      "input_schema": {
+        "type": "object",
+        "required": ["query", "collection"],
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Natural language query, e.g. 'containment steps for ransomware on a domain controller'."
+          },
+          "collection": {
+            "type": "string",
+            "enum": ["playbooks", "detection_rules", "incident_history"]
+          },
+          "top_k": {
+            "type": "integer",
+            "default": 5,
+            "description": "Number of top results to return."
+          },
+          "category_filter": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Optional: restrict results to entries whose applies_to_categories / mitre_attack_techniques overlap this list."
+          }
+        }
+      }
+    }
+  ]
+}

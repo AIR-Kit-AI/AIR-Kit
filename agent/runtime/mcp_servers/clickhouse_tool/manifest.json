@@ -1,0 +1,51 @@
+{
+  "name": "clickhouse_tool",
+  "description": "Read-only SQL access to the airkit ClickHouse database (alerts, incidents, process_events, network_events, auth_events, file_events, raw_events). Enforces a hard SELECT-only guard — no INSERT/UPDATE/DELETE/DDL is possible even if requested, since this tool exists for investigation, not remediation.",
+  "tools": [
+    {
+      "name": "query_clickhouse_logs",
+      "description": "Execute a read-only SQL query against airkit ClickHouse tables. Query must be a single SELECT statement.",
+      "input_schema": {
+        "type": "object",
+        "required": ["sql_query"],
+        "properties": {
+          "sql_query": {
+            "type": "string",
+            "description": "A single SELECT statement against airkit.* tables. Multi-statement queries and any non-SELECT statement are rejected."
+          },
+          "max_rows": {
+            "type": "integer",
+            "default": 500,
+            "description": "Hard cap on rows returned, to avoid flooding the agent's context with an unbounded result set."
+          }
+        }
+      }
+    },
+    {
+      "name": "get_host_telemetry",
+      "description": "Convenience wrapper: returns all event classes (process, network, auth, file, alerts) for a given hostname within a time window, pre-joined and time-ordered. This is the most common first query in triage, so it's exposed as its own tool rather than requiring the agent to hand-write a UNION query every time.",
+      "input_schema": {
+        "type": "object",
+        "required": ["hostname", "time_window_start", "time_window_end"],
+        "properties": {
+          "hostname": { "type": "string" },
+          "time_window_start": { "type": "string", "format": "date-time" },
+          "time_window_end": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    {
+      "name": "correlate_ip_pcap",
+      "description": "Convenience wrapper: returns all network_events involving a given source IP (as src or dst) within a time window.",
+      "input_schema": {
+        "type": "object",
+        "required": ["source_ip", "time_window_start", "time_window_end"],
+        "properties": {
+          "source_ip": { "type": "string" },
+          "time_window_start": { "type": "string", "format": "date-time" },
+          "time_window_end": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  ]
+}
