@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://airkit.local/schema/ocsf/process_event.schema.json",
+  "title": "ProcessEvent",
+  "description": "A process lifecycle event (creation, termination, or image load) as reported by EDR telemetry.",
+  "type": "object",
+  "required": ["event_class", "time", "uid", "action", "process"],
+  "properties": {
+    "event_class": { "const": "process_event" },
+    "uid": { "type": "string" },
+    "time": { "type": "string", "format": "date-time" },
+    "action": {
+      "type": "string",
+      "enum": ["create", "terminate", "image_load"],
+      "description": "Normalized process lifecycle action. EDR vendors use different verbs for the same thing (e.g. 'ProcessRollup2' vs 'process_start'); adapters map onto this fixed set."
+    },
+    "process": {
+      "type": "object",
+      "required": ["pid", "name"],
+      "properties": {
+        "pid": { "type": "integer" },
+        "name": { "type": "string" },
+        "command_line": { "type": "string" },
+        "hash_sha256": { "type": "string" },
+        "signed": { "type": "boolean" },
+        "user": { "type": "string" }
+      }
+    },
+    "parent_process": {
+      "type": "object",
+      "properties": {
+        "pid": { "type": "integer" },
+        "name": { "type": "string" },
+        "command_line": { "type": "string" }
+      },
+      "description": "Optional — parentage isn't always available depending on EDR sensor configuration."
+    },
+    "host": {
+      "type": "object",
+      "required": ["hostname"],
+      "properties": {
+        "hostname": { "type": "string" },
+        "ip": { "type": "string" }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": ["adapter", "vendor"],
+      "properties": {
+        "adapter": { "type": "string" },
+        "vendor": { "type": "string" },
+        "native_id": { "type": "string" }
+      }
+    },
+    "raw": {
+      "type": "object",
+      "description": "Original vendor payload, preserved for forensic fidelity."
+    }
+  }
+}
