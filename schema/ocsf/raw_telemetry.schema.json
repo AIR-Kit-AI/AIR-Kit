@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://airkit.local/schema/ocsf/raw_telemetry.schema.json",
+  "title": "RawTelemetryEvent",
+  "description": "Catch-all for telemetry that doesn't cleanly fit alert/process/network/auth/file — e.g. generic syslog lines, unparsed PCAP summaries, or a new source that hasn't had an adapter written for it yet. This is the escape valve that keeps ingestion from blocking on schema coverage: anything can land here unparsed, and get reclassified later once a real adapter exists. Should shrink over time as adapter coverage grows, not grow indefinitely as a dumping ground.",
+  "type": "object",
+  "required": ["event_class", "time", "uid", "source", "raw"],
+  "properties": {
+    "event_class": { "const": "raw_telemetry" },
+    "uid": { "type": "string" },
+    "time": { "type": "string", "format": "date-time" },
+    "message": {
+      "type": "string",
+      "description": "Best-effort human-readable summary line, if the adapter could extract one."
+    },
+    "host": {
+      "type": "object",
+      "properties": {
+        "hostname": { "type": "string" },
+        "ip": { "type": "string" }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": ["adapter"],
+      "properties": {
+        "adapter": { "type": "string" },
+        "vendor": { "type": "string" },
+        "native_id": { "type": "string" }
+      }
+    },
+    "raw": {
+      "type": "object",
+      "description": "The full original payload. Required (not optional) here, unlike other event classes, since this class's entire purpose is preserving data the canonical schema couldn't yet structure."
+    }
+  }
+}
