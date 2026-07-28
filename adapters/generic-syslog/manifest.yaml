@@ -1,0 +1,32 @@
+adapter_name: generic-syslog
+vendor: (none — generic RFC 3164/5424 syslog)
+description: >
+  Fallback adapter for any device or system that speaks plain syslog and
+  has no dedicated adapter. Everything lands as raw_telemetry. This is
+  intentionally the lowest-common-denominator adapter — its job is to
+  make sure nothing is dropped on the floor for sources that don't
+  warrant (or don't yet have) a purpose-built adapter, not to produce
+  well-typed events.
+
+input:
+  protocol: syslog
+  port: 514
+  auth: none
+
+output_event_classes:
+  - raw_telemetry
+
+collector:
+  engine: vector
+  config_path: vector.toml
+
+field_mapping_notes: >
+  No field mapping performed beyond RFC 3164/5424 header parsing
+  (timestamp, hostname, facility, severity as syslog defines it — NOT the
+  canonical alert severity enum, since a syslog severity of "notice" says
+  nothing about security relevance). The full parsed syslog message is
+  preserved in raw. Sources that produce enough volume or analytical value
+  to justify a real adapter should graduate out of generic-syslog into
+  their own adapters/<name>/ directory using this as a starting template.
+
+maintainer: airkit-core
