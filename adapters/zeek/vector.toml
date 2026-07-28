@@ -1,0 +1,66 @@
+# AIRKit adapter: Zeek
+# Source: tails Zeek's JSON-formatted conn.log and dns.log from a shared
+# volume (mounted read-only into the collector). Sink: airkit.network_events.
+
+[sources.zeek_conn_log]
+type = "file"
+include = ["/var/log/zeek/current/conn.log"]
+read_from = "beginning"
+
+[sources.zeek_dns_log]
+type = "file"
+include = ["/var/log/zeek/current/dns.log"]
+read_from = "beginning"
+
+[transforms.zeek_conn_to_network_event]
+type = "remap"
+inputs = ["zeek_conn_log"]
+source = '''
+. = parse_json!(.message)
+.event_class = "network_event"
+.uid = "zeek:" + .uid
+.time = to_string(.ts)
+.action = "observed"
+.protocol = if .proto == "tcp" { "tcp" } else if .proto == "udp" { "udp" } else if .proto == "icmp" { "icmp" } else { "other" }
+.src.ip = .["id.orig_h"]
+.src.port = .["id.orig_p"]
+.dst.ip = .["id.resp_h"]
+.dst.port = .["id.resp_p"]
+.bytes_sent = .orig_bytes
+.bytes_received = .resp_bytes
+.source.adapter = "zeek"
+.source.vendor = "Zeek"
+.raw = .
+'''
+
+[transforms.zeek_dns_to_network_event]
+type = "remap"
+inputs = ["zeek_dns_log"]
+source = '''
+. = parse_json!(.message)
+.event_class = "network_event"
+.uid = "zeek:" + .uid
+.time = to_string(.ts)
+.action = "observed"
+.protocol = "udp"
+.src.ip = .["id.orig_h"]
+.dst.ip = .["id.resp_h"]
+.dns_query = .query
+.source.adapter = "zeek"
+.source.vendor = "Zeek"
+.raw = .
+'''
+
+[sinks.clickhouse_network_events]
+type = "clickhouse"
+inputs = ["zeek_conn_to_network_event", "zeek_dns_to_network_event"]
+endpoint = "${AIRKIT_CLICKHOUSE_ENDPOINT}"
+table = "airkit.network_events"
+database = "airkit"
+
+[sinks.clickhouse_raw_events]
+type = "clickhouse"
+inputs = ["zeek_conn_to_network_event", "zeek_dns_to_network_event"]
+endpoint = "${AIRKIT_CLICKHOUSE_ENDPOINT}"
+table = "airkit.raw_events"
+database = "airkit"
