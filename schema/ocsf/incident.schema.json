@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://airkit.local/schema/ocsf/incident.schema.json",
+  "title": "IncidentEvent",
+  "description": "A grouping of one or more alerts that an analyst (or a triage process) has escalated into a tracked incident. Incidents are largely created inside AIRKit rather than ingested wholesale from a source, though a source's native case-management system (e.g. a Splunk notable event promoted to an investigation) may originate one via an adapter.",
+  "type": "object",
+  "required": ["event_class", "time", "uid", "status", "title"],
+  "properties": {
+    "event_class": { "const": "incident" },
+    "uid": {
+      "type": "string",
+      "description": "Unique incident ID. If sourced from a vendor case system, prefixed with adapter name; if created natively in AIRKit, a generated ULID."
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Time the incident was opened/declared."
+    },
+    "updated_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last time status or linked alerts changed."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["open", "investigating", "contained", "eradicated", "closed", "false_positive"],
+      "description": "Normalized incident lifecycle state."
+    },
+    "title": { "type": "string" },
+    "severity": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "linked_alert_uids": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "uid values from alert.schema.json events grouped under this incident."
+    },
+    "affected_hosts": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Hostnames or IPs identified as in-scope for this incident."
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "adapter": { "type": "string" },
+        "vendor": { "type": "string" },
+        "native_id": { "type": "string" }
+      },
+      "description": "Omit entirely if this incident was declared natively inside AIRKit rather than ingested."
+    },
+    "notes": {
+      "type": "string",
+      "description": "Free-text analyst notes / running commentary. Kept here rather than forcing a separate comments store for the POC."
+    }
+  }
+}
