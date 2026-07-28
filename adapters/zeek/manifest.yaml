@@ -1,0 +1,28 @@
+adapter_name: zeek
+vendor: Zeek (open source network monitor)
+description: >
+  Tails Zeek's TSV/JSON log files (conn.log, dns.log, http.log, etc.) from
+  a shared internal volume or syslog forward. Purely observational — Zeek
+  has no allow/deny concept, so all network_events from this adapter use
+  action="observed".
+
+input:
+  protocol: file_tail
+  auth: none
+
+output_event_classes:
+  - network_event
+
+collector:
+  engine: vector
+  config_path: vector.toml
+
+field_mapping_notes: >
+  Zeek's conn.log fields (id.orig_h/id.orig_p/id.resp_h/id.resp_p) map to
+  src.ip/src.port/dst.ip/dst.port. Zeek's proto field (tcp/udp/icmp) maps
+  directly onto the canonical protocol enum. dns.log entries are folded
+  into network_event with dns_query populated rather than given their own
+  event class, since a DNS resolution is a specific case of a network
+  event rather than a structurally distinct one in this schema.
+
+maintainer: airkit-core
