@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://airkit.local/schema/ocsf/alert.schema.json",
+  "title": "AlertEvent",
+  "description": "A discrete detection raised by a SIEM, EDR, IDS, or other detection source. Adapters must map vendor-native alert formats into this shape; see adapters/contract/adapter.schema.json.",
+  "type": "object",
+  "required": ["event_class", "time", "uid", "severity", "message", "source"],
+  "properties": {
+    "event_class": {
+      "const": "alert",
+      "description": "Fixed discriminator so ClickHouse/Qdrant consumers and the agent's tools can dispatch on event type without inspecting every field."
+    },
+    "uid": {
+      "type": "string",
+      "description": "Globally unique ID for this alert, ideally the vendor's native alert ID prefixed with the adapter name (e.g. crowdstrike:abc123) for traceability back to source."
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC3339 timestamp of when the alert fired, in the source system's clock — not ingestion time."
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["informational", "low", "medium", "high", "critical"],
+      "description": "Normalized severity. Adapters must map vendor-specific severity scales (e.g. Crowdstrike 1-5, Splunk urgency) onto this fixed set."
+    },
+    "message": {
+      "type": "string",
+      "description": "Human-readable alert summary as provided by the source, lightly normalized."
+    },
+    "category": {
+      "type": "string",
+      "description": "Free-text detection category from the source (e.g. 'malware', 'lateral-movement', 'credential-access'). Not constrained to a fixed enum at the canonical layer since taxonomies vary too much across vendors; used for search/filter, not strict typing."
+    },
+    "mitre_attack_techniques": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^T[0-9]{4}(\\.[0-9]{3})?$" },
+      "description": "MITRE ATT&CK technique IDs if the source provides mapping (e.g. T1055, T1003.001)."
+    },
+    "source": {
+      "type": "object",
+      "required": ["adapter", "vendor"],
+      "properties": {
+        "adapter": { "type": "string", "description": "Which adapter produced this event, e.g. 'crowdstrike', 'splunk-hec'." },
+        "vendor": { "type": "string", "description": "Native vendor/product name, e.g. 'CrowdStrike Falcon'." },
+        "native_id": { "type": "string", "description": "The alert's original ID in the source system, unprefixed." }
+      }
+    },
+    "host": {
+      "type": "object",
+      "properties": {
+        "hostname": { "type": "string" },
+        "ip": { "type": "string" },
+        "os": { "type": "string" }
+      },
+      "description": "Optional — not every alert is host-scoped (e.g. a network-level or identity-level alert may omit this)."
+    },
+    "raw": {
+      "type": "object",
+      "description": "The original, unmodified vendor payload, preserved for forensic fidelity and for cases where the agent needs a field the canonical schema doesn't surface."
+    }
+  }
+}
