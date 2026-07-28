@@ -1,0 +1,65 @@
+# AIRKit adapter: Splunk HTTP Event Collector (HEC)
+# Source: Splunk / Splunk forwarders push directly to this HEC-compatible
+# listener. Sink: airkit.alerts for recognized notable events,
+# airkit.raw_events for everything else.
+
+[sources.splunk_hec]
+type = "splunk_hec"
+address = "0.0.0.0:8088"
+token = "${AIRKIT_SPLUNK_HEC_TOKEN}"
+
+# --- Recognized Splunk ES notable events -> canonical alert schema ---
+[transforms.splunk_to_alert]
+type = "filter"
+inputs = ["splunk_hec"]
+condition = 'exists(.event.notable_id) ?? false'
+
+[transforms.splunk_to_alert.remap]
+type = "remap"
+inputs = ["splunk_to_alert"]
+source = '''
+.event_class = "alert"
+.uid = "splunk-hec:" + .event.notable_id
+.time = .event._time
+.severity = downcase(string!(.event.urgency))
+.message = .event.rule_title
+.category = .event.security_domain
+.source.adapter = "splunk-hec"
+.source.vendor = "Splunk Enterprise"
+.source.native_id = .event.notable_id
+.host.hostname = .event.dest
+.raw = .event
+'''
+
+# --- Everything else HEC receives -> raw_telemetry, not dropped ---
+[transforms.splunk_to_raw]
+type = "filter"
+inputs = ["splunk_hec"]
+condition = '!(exists(.event.notable_id) ?? false)'
+
+[transforms.splunk_to_raw.remap]
+type = "remap"
+inputs = ["splunk_to_raw"]
+source = '''
+.event_class = "raw_telemetry"
+.uid = "splunk-hec:" + uuid_v4()
+.time = .event._time ?? now()
+.message = to_string(.event) ?? ""
+.source.adapter = "splunk-hec"
+.source.vendor = "Splunk Enterprise"
+.raw = .event
+'''
+
+[sinks.clickhouse_alerts]
+type = "clickhouse"
+inputs = ["splunk_to_alert"]
+endpoint = "${AIRKIT_CLICKHOUSE_ENDPOINT}"
+table = "airkit.alerts"
+database = "airkit"
+
+[sinks.clickhouse_raw_events]
+type = "clickhouse"
+inputs = ["splunk_to_alert", "splunk_to_raw"]
+endpoint = "${AIRKIT_CLICKHOUSE_ENDPOINT}"
+table = "airkit.raw_events"
+database = "airkit"
