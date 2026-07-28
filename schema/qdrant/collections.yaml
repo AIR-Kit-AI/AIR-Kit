@@ -1,0 +1,69 @@
+# AIRKit Qdrant collection definitions.
+#
+# These hold the material that benefits from semantic/hybrid search rather
+# than exact-match SQL: playbooks, detection rules, and narrative incident
+# history. Raw structured telemetry (process/network/auth/file events)
+# stays in ClickHouse — putting high-volume structured events into a
+# vector DB is the wrong tool for that job.
+#
+# Embedding model: left unspecified here deliberately. The agent runtime
+# (agent/runtime/mcp_servers/qdrant_tool) owns the choice of embedding
+# model and must keep it consistent across ingestion and query time —
+# swapping embedding models requires a full re-index of every collection.
+
+collections:
+  - name: playbooks
+    description: >
+      Incident response playbooks and runbooks — the "what do we do when
+      X happens" documents. Chunked at the section/step level, not whole
+      documents, so retrieval returns actionable steps rather than entire
+      runbooks.
+    vector_size: 1024
+    distance: Cosine
+    payload_schema:
+      playbook_id: keyword
+      title: text
+      section_title: text
+      chunk_text: text
+      applies_to_categories: keyword[]   # e.g. ["ransomware", "lateral-movement"]
+      source_path: keyword               # original doc this was chunked from
+    hybrid_search:
+      enabled: true
+      sparse_method: bm25                # exact-term matching alongside dense vectors
+
+  - name: detection_rules
+    description: >
+      YARA and Sigma rules, embedded for semantic retrieval ("find rules
+      similar to this behavior") in addition to exact rule-name lookup.
+    vector_size: 1024
+    distance: Cosine
+    payload_schema:
+      rule_id: keyword
+      rule_type: keyword                 # "yara" | "sigma"
+      rule_name: text
+      rule_body: text                    # full rule source, for citation back to analyst
+      mitre_attack_techniques: keyword[]
+      author: keyword
+      last_updated: keyword              # ISO8601 date string
+    hybrid_search:
+      enabled: true
+      sparse_method: bm25
+
+  - name: incident_history
+    description: >
+      Narrative summaries of past incidents (not the structured
+      alert/incident rows in ClickHouse — this is the analyst-written
+      "what happened and how we handled it" writeup), embedded so the
+      agent can retrieve "have we seen something like this before."
+    vector_size: 1024
+    distance: Cosine
+    payload_schema:
+      incident_uid: keyword              # foreign key back to airkit.incidents.uid in ClickHouse
+      summary_text: text
+      resolution: text
+      lessons_learned: text
+      affected_hosts: keyword[]
+      closed_date: keyword
+    hybrid_search:
+      enabled: true
+      sparse_method: bm25
