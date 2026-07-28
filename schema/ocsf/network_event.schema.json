@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://airkit.local/schema/ocsf/network_event.schema.json",
+  "title": "NetworkEvent",
+  "description": "A network connection event: a flow record, a firewall log line, or a PCAP-derived connection summary.",
+  "type": "object",
+  "required": ["event_class", "time", "uid", "src", "dst", "protocol"],
+  "properties": {
+    "event_class": { "const": "network_event" },
+    "uid": { "type": "string" },
+    "time": { "type": "string", "format": "date-time" },
+    "action": {
+      "type": "string",
+      "enum": ["allowed", "blocked", "observed"],
+      "description": "'observed' covers passive sources like Zeek/PCAP that have no allow/deny concept."
+    },
+    "protocol": {
+      "type": "string",
+      "enum": ["tcp", "udp", "icmp", "other"]
+    },
+    "src": {
+      "type": "object",
+      "required": ["ip"],
+      "properties": {
+        "ip": { "type": "string" },
+        "port": { "type": "integer" },
+        "hostname": { "type": "string" }
+      }
+    },
+    "dst": {
+      "type": "object",
+      "required": ["ip"],
+      "properties": {
+        "ip": { "type": "string" },
+        "port": { "type": "integer" },
+        "hostname": { "type": "string" }
+      }
+    },
+    "bytes_sent": { "type": "integer" },
+    "bytes_received": { "type": "integer" },
+    "dns_query": {
+      "type": "string",
+      "description": "Populated when this event represents a DNS resolution rather than a raw connection."
+    },
+    "source": {
+      "type": "object",
+      "required": ["adapter", "vendor"],
+      "properties": {
+        "adapter": { "type": "string" },
+        "vendor": { "type": "string" },
+        "native_id": { "type": "string" }
+      }
+    },
+    "raw": { "type": "object" }
+  }
+}
