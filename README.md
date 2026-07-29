@@ -22,9 +22,8 @@
 ## Table of Contents
 
 - [Background](#background)
-- [Terminology: this is not an air-gapped system](#terminology-this-is-not-an-air-gapped-system)
+- [Zero-egress](#zero-egress-not-air-gapped)
 - [Architecture](#architecture)
-- [Non-goals](#non-goals)
 - [Repository Layout](#repository-layout)
 - [Setup](#setup)
   - [Prerequisites](#prerequisites)
@@ -36,6 +35,7 @@
 - [Tool Contract](#tool-contract)
 - [Operational Notes](#operational-notes)
 - [Known Limitations](#known-limitations)
+- [Non-goals](#non-goals)
 - [Component Status](#component-status)
 - [Roadmap](#roadmap)
 - [License](#license)
