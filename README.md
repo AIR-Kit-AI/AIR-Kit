@@ -14,9 +14,10 @@
 
 # AI Incident Response Kit
 _**Self-hosted, zero-egress incident analysis infrastructure for security operations teams.**_
+<img src="/assets/tagline.svg" alt="Self-hosted, zero-egress incident analysis infrastructure for security operations teams.">
+
+
 <br />
-
-
 ## Table of Contents
 
 - [Background](#background)
