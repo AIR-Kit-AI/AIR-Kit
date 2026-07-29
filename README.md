@@ -99,7 +99,7 @@ If an analyst pulls a live malware sample or an active C2 implant off an endpoin
         [ Analyst workstation, internal network ]
 ```
 
-Provisioning is OpenTofu, not HashiCorp Terraform. Not just because of Terraform's BSL 1.1 license but that OpenTofu (Linux Foundation, MPL 2.0) has native client-side state encryption, because the state file for this deployment contains subnet IDs, instance IPs, and volume IDs for a security-critical node. Treat it as sensitive, not disposable.
+Provisioning is OpenTofu, not HashiCorp Terraform. (And not Pulumi for obvious reasons.) Not just because of Terraform's BSL 1.1 license but that OpenTofu (Linux Foundation, MPL 2.0) has native client-side state encryption, because the state file for this deployment contains subnet IDs, instance IPs, and volume IDs for a security-critical node. Treat it as sensitive, not disposable.
 
 ## Repository Layout
 
