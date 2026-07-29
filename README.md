@@ -50,7 +50,7 @@ This repository implements exactly one item from a larger 30/60/90 runtime-contr
 
 The reason for self-hosting rather than calling a commercial API: an analyst asking a question during an active incident needs a model that will engage with real exploit code, C2 traffic, malicious payloads, and attacker tooling on their behalf. Commercial hosted models' safety classifiers routinely refuse that content because they cannot distinguish an incident responder reconstructing an attack from an attacker extending one. AIRKit exists to remove that failure mode. Everything else in this repository — the subnet design, the adapter contract, the ClickHouse/Qdrant split — exists to make that self-hosted model useful against real telemetry without also making it a new attack surface.
 
-## Terminology: this is not an air-gapped system
+## Zero-egress, not Air-gapped
 
 Precision here matters because the wrong mental model leads to wrong security assumptions downstream.
 
