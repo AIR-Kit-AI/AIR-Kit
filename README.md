@@ -74,40 +74,33 @@ If an analyst pulls a live malware sample or an active C2 implant off an endpoin
 ```
 [ SIEM / EDR / Zeek / syslog sources, internal network ]
                     │
-                    ▼  (inbound only, per-adapter protocol)
-  ┌───────────────────────────────────────────────────────┐
+                    │  (inbound only, per-adapter protocol)
+                    ▼ 
+  ┌────────────────────────────────────────────────────────┐
   │              ZERO-EGRESS PRIVATE SUBNET                │
   │                                                        │
-  │  Vector (per-adapter ingestion, canonical mapping)      │
+  │  Vector (per-adapter ingestion, canonical mapping)     │
   │       │                                                │
   │       ▼                                                │
   │  ClickHouse (structured telemetry, SQL)                │
-  │  Qdrant (playbooks, detection rules, incident history)  │
+  │  Qdrant (playbooks, detection rules, incident history) │
   │       │                                                │
   │       ▼                                                │
   │  MCP tool servers (read-only)                          │
   │       │                                                │
   │       ▼                                                │
-  │  SGLang serving GLM-5.2 (8-way tensor parallel, H200s)  │
+  │  SGLang serving GLM-5.2 (8-way tensor parallel, H200s) │
   │                                                        │
-  │  Egress: NONE, except S3 Gateway Endpoint → weights     │
-  │           bucket (model hydration only)                 │
-  └───────────────────────────────────────────────────────┘
+  │  Egress: NONE, except S3 Gateway Endpoint → weights    │
+  │           bucket (model hydration only)                │
+  └────────────────────────────────────────────────────────┘
                     │
-                    ▼  (analyst console / SGLang API, internal CIDR only)
+                    │  (analyst console / SGLang API, internal CIDR only)
+                    ▼
         [ Analyst workstation, internal network ]
 ```
 
 Provisioning is OpenTofu, not HashiCorp Terraform. The choice is deliberate, not incidental: Terraform's BSL 1.1 license carries redistribution risk for anything you package or resell that HashiCorp deems competitive with its own products, and OpenTofu (Linux Foundation, MPL 2.0) does not. OpenTofu also has native client-side state encryption, which matters here because the state file for this deployment contains subnet IDs, instance IPs, and volume IDs for a security-critical node. Treat it as sensitive, not disposable.
-
-## Non-goals
-
-Explicitly out of scope for this repository, by design, not oversight:
-
-- **Runtime governance of other agentic systems.** No Reachable State Analysis, no reachability manifest, no denial matrix, no out-of-band kill switch, no irreversible-transition approval gates. This system does not watch your other agents.
-- **Automated containment or remediation.** Every tool exposed to the agent is read-only (see [Tool Contract](#tool-contract)). The agent produces analysis; a human analyst decides what to do about it.
-- **Detonating live malware.** Use a genuinely air-gapped, physically disconnected workstation for that. See [Terminology](#terminology-this-is-not-an-air-gapped-system).
-- **A fully automated onboarding wizard.** The installer sequences infrastructure, schema, and adapter deployment, but adapter authoring for a new telemetry source is a manual, reviewed process (see [Adapter Model](#adapter-model)). This is intentional — silent, unreviewed field-mapping decisions in a security telemetry pipeline are a worse failure mode than a manual step.
 
 ## Repository Layout
 
@@ -219,6 +212,15 @@ The agent's system prompt states directly that all queried data — log lines, a
 - No authentication layer in front of the SGLang API or the analyst console beyond network-level restriction to `internal_corporate_cidr`. Anyone reachable from that CIDR can query the model and, transitively, the telemetry stores. If your internal network's trust boundary doesn't match your security requirements here, add an authentication layer before relying on the CIDR restriction alone.
 - `console/` (the analyst-facing triage UI) does not exist yet. Interact with the agent via `agent/runtime/loop.py` directly, or build the console as a follow-on.
 - The adapter set ships with four references (CrowdStrike, Splunk HEC, Zeek, generic syslog), and none of them have been validated against a live vendor feed. Treat them as structurally correct starting points, not certified integrations, until you've run one against real data from that source.
+
+## Non-goals
+
+Explicitly out of scope for this repository, by design, not oversight:
+
+- **Runtime governance of other agentic systems.** No Reachable State Analysis, no reachability manifest, no denial matrix, no out-of-band kill switch, no irreversible-transition approval gates. This system does not watch your other agents.
+- **Automated containment or remediation.** Every tool exposed to the agent is read-only (see [Tool Contract](#tool-contract)). The agent produces analysis; a human analyst decides what to do about it.
+- **Detonating live malware.** Use a genuinely air-gapped, physically disconnected workstation for that. See [Terminology](#terminology-this-is-not-an-air-gapped-system).
+- **A fully automated onboarding wizard.** The installer sequences infrastructure, schema, and adapter deployment, but adapter authoring for a new telemetry source is a manual, reviewed process (see [Adapter Model](#adapter-model)). This is intentional — silent, unreviewed field-mapping decisions in a security telemetry pipeline are a worse failure mode than a manual step.
 
 ## Component Status
 
