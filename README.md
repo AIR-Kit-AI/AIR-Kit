@@ -10,6 +10,8 @@
   <img src="/assets/AIR-Kit_logo.png" alt="AIRKit" width="240">
 </p>
 
+---
+
 # AI Incident Response Kit
 
 **Self-hosted, zero-egress incident analysis infrastructure for security operations teams.**
