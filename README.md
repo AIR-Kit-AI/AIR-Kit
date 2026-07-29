@@ -8,7 +8,7 @@
 
 <p align="center">
   <img src="/assets/AIR-Kit_logo_bleu.png" alt="AIRKit" width="240">
-  <a href="https://air-kit.tech/>air-kit.tech</a>
+  <a href="https://air-kit.tech/">air-kit.tech</a>
 </p>
 
 ---
