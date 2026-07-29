@@ -36,7 +36,7 @@
 - [Operational Notes](#operational-notes)
 - [Known Limitations](#known-limitations)
 - [Non-goals](#non-goals)
-- [Component Status](#component-status)
+- [Development](#component-status)
 - [Roadmap](#roadmap)
 - [License](#license)
 
