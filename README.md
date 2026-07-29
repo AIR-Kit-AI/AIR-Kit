@@ -197,7 +197,7 @@ To add a new source: copy `adapters/_template/`, fill in the manifest, write the
 
 The agent (`agent/prompts/soc_analyst.md`) has exactly two tools: `clickhouse_tool` and `qdrant_tool`, both under `agent/runtime/mcp_servers/`. Both are read-only, and that guarantee is enforced in code, not left to prompt instruction-following. `clickhouse_tool/server.py` rejects any query containing `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `TRUNCATE`, `CREATE`, or several other mutating keywords before it ever reaches ClickHouse, and rejects multi-statement input outright. `qdrant_tool/server.py` exposes search only; no ingestion path exists through the MCP layer at all. Indexing new playbooks or detection rules is a separate, offline process, specifically so the agent, or attacker-controlled text it has ingested from telemetry, cannot poison the playbook corpus through a tool call.
 
-The agent's system prompt states directly that all queried data — log lines, alert payloads, command-line arguments — may contain attacker-controlled text, and instructs the model to analyze it rather than follow any instructions embedded in it. Treat this as defense in depth alongside the tool-level read-only guard, not a substitute for it.
+The agent's system prompt states directly that all queried data (incl. log lines, alert payloads, and command-line arguments) may contain attacker-controlled text, and instructs the model to analyze it rather than follow any instructions embedded in it. Treat this as defense in depth alongside the tool-level read-only guard, not a substitute for it.
 
 ## Operational Notes
 
