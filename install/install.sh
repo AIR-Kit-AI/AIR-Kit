@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# AIRKit installer.
+# AIR-Kit installer.
 #
 # Deploys the Step 1 "Insulated SecOps Analysis Node" from the CTO Lunch
 # NYC 30/60/90 playbook: a self-hosted, zero-egress GLM-5.2 inference node
