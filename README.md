@@ -222,7 +222,7 @@ Explicitly out of scope for this repository, by design, not oversight:
 - **Detonating live malware.** Use a genuinely air-gapped, physically disconnected workstation for that. See [Terminology](#terminology-this-is-not-an-air-gapped-system).
 - **A fully automated onboarding wizard.** The installer sequences infrastructure, schema, and adapter deployment, but adapter authoring for a new telemetry source is a manual, reviewed process (see [Adapter Model](#adapter-model)). This is intentional — silent, unreviewed field-mapping decisions in a security telemetry pipeline are a worse failure mode than a manual step.
 
-## Component Status
+## Component Status (development)
 
 | Component | Status |
 |---|---|
