@@ -14,7 +14,7 @@
 
 # AI Incident Response Kit
 
-$\color{#4B49F8}{\textbf{\textit{Self-hosted, zero-egress incident analysis infrastructure for security operations teams.}}}$
+$\color{#4B49F8}{\mathbf{\mathit{Self-hosted, zero-egress incident analysis infrastructure for security operations teams.}}}$
 
 <br />
 
