@@ -17,7 +17,8 @@
 
 
 <br />
-# Table of Contents
+
+## Table of Contents
 
 - [Background](#background)
 - [Zero-egress](#zero-egress-not-air-gapped)
