@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <img src="/assets/AIR-Kit_logo.png" alt="AIRKit" width="240">
+  <img src="/assets/AIR-Kit_logo_bleu.png" alt="AIRKit" width="240">
 </p>
 
 ---
